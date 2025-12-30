@@ -28,14 +28,45 @@ class SilverRonin:
         """Initialize the application."""
         self.running = False
         self.update_interval = int(os.getenv('UPDATE_INTERVAL', '60'))
+        
+        # Import components
+        from .data_fetchers import get_market_data_fetcher, get_news_fetcher
+        from .graphics import get_graph_generator
+        from .tts import get_tts_engine
+        
+        # Initialize components
+        self.market_data_fetcher = get_market_data_fetcher()
+        self.news_fetcher = get_news_fetcher()
+        self.graph_generator = get_graph_generator()
+        self.tts_engine = get_tts_engine()
+        
         logger.info("Silver Ronin initialized")
     
     def setup(self):
         """Set up the application components."""
         try:
-            # Initialize components here
             logger.info("Setting up application components...")
-            # TODO: Initialize market data fetcher, news fetcher, etc.
+            
+            # Create necessary directories
+            os.makedirs("assets/images", exist_ok=True)
+            os.makedirs("assets/audio", exist_ok=True)
+            os.makedirs("logs", exist_ok=True)
+            
+            # Test connections
+            logger.info("Testing market data connection...")
+            prices = self.market_data_fetcher.fetch_prices()
+            if prices:
+                logger.info(f"✓ Market data connected: {len(prices)} metals")
+            else:
+                logger.warning("⚠ Market data connection failed")
+            
+            logger.info("Testing news fetcher...")
+            articles = self.news_fetcher.fetch_news(max_articles=3)
+            if articles:
+                logger.info(f"✓ News fetcher working: {len(articles)} articles")
+            else:
+                logger.warning("⚠ News fetcher returned no articles")
+            
             return True
         except Exception as e:
             logger.error(f"Failed to set up application: {e}")
@@ -45,7 +76,27 @@ class SilverRonin:
         """Update all components."""
         try:
             logger.debug("Updating components...")
-            # TODO: Update market data, news, generate graphs, etc.
+            
+            # Update market data
+            prices = self.market_data_fetcher.fetch_prices()
+            if prices:
+                logger.debug(f"Updated prices: {list(prices.keys())}")
+            
+            # Update news
+            articles = self.news_fetcher.fetch_news(max_articles=10)
+            if articles:
+                logger.debug(f"Updated news: {len(articles)} articles")
+            
+            # Update graphs
+            graphs = self.graph_generator.update_all_graphs()
+            if graphs:
+                logger.debug(f"Updated graphs: {list(graphs.keys())}")
+            
+            # Update TTS
+            tts_status = self.tts_engine.update_all()
+            if tts_status['audio_files_generated'] > 0:
+                logger.info(f"Generated {tts_status['audio_files_generated']} audio files")
+            
             return True
         except Exception as e:
             logger.error(f"Update failed: {e}")
@@ -86,7 +137,6 @@ class SilverRonin:
         """Clean up resources and shut down the application."""
         logger.info("Shutting down...")
         self.running = False
-        # TODO: Clean up resources
 
 if __name__ == "__main__":
     app = SilverRonin()
